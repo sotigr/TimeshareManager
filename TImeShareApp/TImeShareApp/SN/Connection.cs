@@ -6,6 +6,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace SN
 {
@@ -19,15 +20,43 @@ namespace SN
         public bool Connected { get { return con; } }
         public string IP { get { return ip; } }
         public int Port { get { return port; } }
+
+        public event EventHandler SendStarted;
+        public event EventHandler SendEnded;
+
+        protected virtual void OnSendStarted(EventArgs e)
+        {
+            EventHandler handler = SendStarted;
+            if (handler != null)
+            {
+                handler(this, e);
+            }
+        }
+        protected virtual void OnSendEnded(EventArgs e)
+        {
+            EventHandler handler = SendEnded;
+            if (handler != null)
+            {
+                handler(this, e);
+            }
+        }
+
+
+
         public Connection(string ip, int port)
         {
-            this.ip = ip;
+            Match ipcheck = Regex.Match(ip, @"^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$");
+            if (ipcheck.Success)
+                this.ip = ip;
+            else
+                this.ip = Dns.GetHostAddresses(ip)[0].ToString();
             this.port = port;
 
         }
 
         public void Open()
         {
+
             SN.RequestInfo rei = new SN.RequestInfo();
 
             byte[] data = System.Text.Encoding.UTF8.GetBytes(Newtonsoft.Json.JsonConvert.SerializeObject(rei));
@@ -45,7 +74,7 @@ namespace SN
                 aes_key = Encoding.ASCII.GetBytes(key);
                 aes_iv = Encoding.ASCII.GetBytes(iv);
 
-                RSA rsa = new RSA(512, false, true);
+                RSA rsa = new RSA(0, false, true);
                 rsa.SetPublicKey(resp_inf.rsa_p_key);
                 string[] cipher = rsa.Encrypt(Encoding.UTF8.GetBytes(key + " " + iv), sha256(CreateRandomString(32)));
                 string rsa_text = "";
@@ -78,15 +107,16 @@ namespace SN
                 hash += theByte.ToString("x2");
             }
             return hash;
-        }  
+        }
         private byte[] AuthSend(byte[] msg)
         {
-            
+
             IPHostEntry ipHost = Dns.GetHostEntry(Dns.GetHostName());
             IPEndPoint ipEndPoint = new IPEndPoint(IPAddress.Parse(ip), port);
 
             Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-
+            client.ReceiveTimeout = 5000;
+            client.SendTimeout = 5000;
             client.Connect(ipEndPoint);
 
             client.Send(msg, msg.Length, SocketFlags.None);
@@ -96,26 +126,29 @@ namespace SN
             int bytesRead = 1024;
 
             MemoryStream stream = new MemoryStream();
+
+
             while ((bytesRead = client.Receive(buffer, 0, buffer.Length, SocketFlags.None)) > 0)
             {
                 stream.Write(buffer, 0, bytesRead);
             }
 
             client.Shutdown(SocketShutdown.Both);
-            client.Close(); 
-             
+            client.Close();
+
             return stream.ToArray();
 
         }
         public T Send<T>(string apipath, object obj = null)
         {
+            OnSendStarted(new EventArgs());
             SN.RequestInfo rei = new SN.RequestInfo();
             rei.attr = apipath;
             rei.sid = this.resp_inf.sid;
             rei.msg = AES.Encrypt(Newtonsoft.Json.JsonConvert.SerializeObject(obj), aes_key, aes_iv);
             byte[] data = System.Text.Encoding.UTF8.GetBytes(Newtonsoft.Json.JsonConvert.SerializeObject(rei));
             string response = AES.Decrypt(Encoding.UTF8.GetString(AuthSend(data)), aes_key, aes_iv);
-   
+            OnSendEnded(new EventArgs());
             return Newtonsoft.Json.JsonConvert.DeserializeObject<T>(response);
 
         }

@@ -17,41 +17,37 @@ namespace TImeShareApp
 
         private void AuthLoginForm_Load(object sender, System.EventArgs e)
         {
-            panel2.TabStop = false;
-            panel1.Focus();
-            textBoxX3.Text = "192.168.1.4";
-            textBoxX4.Text = "581";
-            new Thread(() =>
-            {
-                try
-                {
-                    Utility.Connection = new SN.Connection(textBoxX3.Text, int.Parse(textBoxX4.Text));
-                    Utility.Connection.Open();
-                    this.Invoke(new Action(() => { LoadEnded(); }));
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show(ex.Message);
-                    try
-                    {
-                        this.Invoke(new Action(() => { MessageBox.Show("A connection with the server could not be established. Entering offline mode."); this.Close(); }));
-                    }
-                    catch { }
-                }
-            }).Start();
+            this.Text = Utility.CurrentLanguage["loginform"];
+            buttonX1.Text = Utility.CurrentLanguage["login"];
 
-            textBoxX1.Focus();
+            buttonX3.Text = Utility.CurrentLanguage["connect"];
+
+            buttonX2.Text = Utility.CurrentLanguage["gooffline"];
+
+            labelX1.Text = Utility.CurrentLanguage["username"];
+
+            labelX2.Text = Utility.CurrentLanguage["password"];
+
+            labelX3.Text = Utility.CurrentLanguage["server"];
+
+            labelX4.Text = Utility.CurrentLanguage["port"];
+
+            textBoxX3.Text = "xenotelsn.ddns.net";
+            textBoxX4.Text = "581";
+ 
+            textBoxX1.Focus(); 
+
         }
         private void LoadEnded()
         {
-            panel2.Visible = false;
+            panel3.Visible = false;
             panel1.Enabled = true;
             loaddone = true;
+            this.Height = 210;
         }
 
         private void buttonX1_Click(object sender, EventArgs e)
-        {
-
+        { 
             Login();
         }
         private void Login()
@@ -80,6 +76,51 @@ namespace TImeShareApp
         {
             if (e.KeyCode == Keys.Enter)
                 Login();
+
+        }
+
+        private void panel2_Paint(object sender, PaintEventArgs e)
+        {
+
+        }
+
+        private void buttonX3_Click(object sender, EventArgs e)
+        {
+            buttonX3.Enabled = false;
+            buttonX2.Enabled = false;
+            this.Height = 255;
+            Authlabel.Visible = true;
+            progressBarX1.Visible = true;
+            new Thread(() =>
+            {
+                try
+ {
+                    Utility.Connection = new SN.Connection(textBoxX3.Text, int.Parse(textBoxX4.Text));
+                    Utility.Connection.Open();
+                    this.Invoke(new Action(() => { LoadEnded(); }));
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.Message);
+                    try
+                    {
+                        this.Invoke(new Action(() => {
+                            buttonX3.Enabled = true;
+                            buttonX2.Enabled = true;
+                            this.Height = 157;
+                            Authlabel.Visible = false;
+                            progressBarX1.Visible = false;
+
+                            MessageBox.Show("A connection with the server could not be established. Entering offline mode."); }));
+                    }
+                    catch { }
+                } 
+            }).Start();
+
+        }
+
+        private void labelX3_Click(object sender, EventArgs e)
+        {
 
         }
     }

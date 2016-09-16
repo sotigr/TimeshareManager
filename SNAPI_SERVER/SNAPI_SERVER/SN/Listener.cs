@@ -12,6 +12,7 @@ namespace SN
     {
         private string _ip;
         private int _port;
+        public int RsaLength = 256;
         public Listener(string ip, int port)
         {
             _ip = ip;
@@ -35,7 +36,7 @@ namespace SN
                         }
                     }
                 } 
-                catch (Exception ex) {/* System.Windows.Forms.MessageBox.Show(ex.Message); */}
+                catch (Exception ex) { System.IO.File.WriteAllText("err.txt", ex.Message); }
             }
         }
         public void Start()
@@ -51,7 +52,8 @@ namespace SN
             while (true)
             {
                 TcpClient client = listener.AcceptTcpClient();
-
+                client.ReceiveTimeout = 5000;
+                client.SendTimeout = 5000;
                 new Thread((cl) =>
                 {
                     try
@@ -112,7 +114,7 @@ namespace SN
 
                                                     clientAuth = true;
                                                 }
-                                                catch (Exception ex) { /*System.Windows.Forms.MessageBox.Show(ex.Message);*/ }
+                                                catch (Exception ex) { System.IO.File.WriteAllText("err.txt", ex.Message); }
                                             }
 
                                         }
@@ -155,8 +157,8 @@ namespace SN
                         }
 
                     }
-                    catch (Exception ex) { /*System.Windows.Forms.MessageBox.Show(ex.Message);*/ }
-
+                    catch (Exception ex) {  System.IO.File.WriteAllText("err.txt",ex.Message);  }
+                    GC.Collect();
                 }).Start(client);
             }
         }
@@ -178,8 +180,8 @@ namespace SN
                     SN.Sessions.Current[sid]["session.activationdate"] = DateTime.Now;
                     SN.Sessions.Current[sid]["session.clientip"] = client_ip;
                     SN.Sessions.Current[sid]["session.authflag"] = true;
-                    SN.Sessions.Current[sid]["RSA"] = new RSA(128, true);
-
+                    SN.Sessions.Current[sid]["RSA"] = new RSA(RsaLength, true);
+          
                     break;
                 }
             }

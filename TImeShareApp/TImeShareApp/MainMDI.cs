@@ -16,7 +16,7 @@ namespace TImeShareApp
 {
     public partial class MainMDI : Office2007Form
     {
-     
+
         public MainMDI()
         {
 
@@ -24,12 +24,12 @@ namespace TImeShareApp
             this.Size = new Size(1024, 768);
 
         }
-        
+
         private void ExitToolsStripMenuItem_Click(object sender, EventArgs e)
         {
             this.Close();
         }
-        
+
         private void CascadeToolStripMenuItem_Click(object sender, EventArgs e)
         {
             LayoutMdi(MdiLayout.Cascade);
@@ -58,7 +58,7 @@ namespace TImeShareApp
 
         private void MainMDI_Load(object sender, EventArgs e)
         {
-
+            pictureBox1.Visible = false;
 
             Utility.database = new Database(Utility.settings["MDBpath"]);
             MdiClient ctlMDI;
@@ -218,8 +218,15 @@ namespace TImeShareApp
             l["payments"] = "Πληρομές";
             l["search_by"] = "Αναζήτηση βάση σε:";
             l["resaults"] = "Αποτελέσματα";
+            l["connect"] = "Σύνδεση";
+            l["login"] = "Σύνδεση";
+            l["gooffline"] = "Τοπική χρήση"; 
+            l["loginform"] = "Φόρμα σύνδεσης";
 
-
+            l["server"] = "Διακομιστής";
+            l["port"] = "Θύρα";
+            l["username"] = "Όνομα χρήστη";
+            l["password"] = "Κωδικός";
             Utility.CurrentLanguage = l;
             //System.IO.File.WriteAllText("gr", JsonConvert.SerializeObject(obj));
 
@@ -239,15 +246,15 @@ namespace TImeShareApp
             windowsMenu.Text = Utility.CurrentLanguage["windows"];
             helpMenu.Text = Utility.CurrentLanguage["help"];
 
-            aboutToolStripMenuItem.Text = Utility.CurrentLanguage["about"]; 
+            aboutToolStripMenuItem.Text = Utility.CurrentLanguage["about"];
 
             allcardsToolStripMenuItem.Text = Utility.CurrentLanguage["cards"];
             findToolStripMenuItem1.Text = Utility.CurrentLanguage["find"];
             addNewToolStripMenuItem.Text = Utility.CurrentLanguage["addnew_f"];
             clientsToolStripMenuItem.Text = Utility.CurrentLanguage["clients"];
 
-            new Thread(() => { Thread.Sleep(100);  this.Invoke(new Action(()=> { ShowLoginForm(); })); }).Start();   
-//            ShowSearchCard();
+            new Thread(() => { Thread.Sleep(100); this.Invoke(new Action(() => { ShowLoginForm(); })); }).Start();
+            //            ShowSearchCard();
 
         }
         private string serializeObject(object obj)
@@ -264,20 +271,34 @@ namespace TImeShareApp
         }
 
 
+        private void SendSrt(object sender, EventArgs e)
+        {
+            pictureBox1.Visible = true;
+            Application.DoEvents();
+            this.Cursor = Cursors.AppStarting;
+        }
 
+        private void SendEnd(object sender, EventArgs e)
+        {
+            pictureBox1.Visible = false;
+            Application.DoEvents();
+            this.Cursor = Cursors.Default;
+        }
         private void ShowLoginForm()
         {
-          
+
             AuthLoginForm F2 = new AuthLoginForm();
- 
+
             F2.ShowDialog();
             if (F2.authed)
-            { 
- 
-                Utility.database.OnlineMode = true; 
+            {
+
+                Utility.database.OnlineMode = true;
                 statusLabel.Text = "Online Mode - Connected to " + Utility.Connection.IP + ":" + Utility.Connection.Port.ToString();
                 statusLabel.ForeColor = Color.Green;
                 conBtnToolStripMenuItem.Text = "Logout";
+                Utility.Connection.SendStarted += SendSrt;
+                Utility.Connection.SendEnded += SendEnd;
             }
             else
             {
@@ -371,37 +392,38 @@ namespace TImeShareApp
             InputForms.InputForm iform = new InputForms.InputForm(new string[2] { "Year:", "Value:" }, "Charge", "Charge clients", 40, 150);
             string[] iformres = iform.Open(this);
             if (iformres != null)
-            if (MessageBox.Show(this, "Charge all clients "+iformres[1]+ "€ for " + iformres[0]+ "?", "", MessageBoxButtons.YesNo) == DialogResult.Yes)
-            {
-                Utility.database.OpenConnection();
-
-                SqlResault res = Utility.database.Query("select id from Clients");
-
-                for (int i = 0; i < res.Count; i++)
+                if (MessageBox.Show(this, "Charge all clients " + iformres[1] + "€ for " + iformres[0] + "?", "", MessageBoxButtons.YesNo) == DialogResult.Yes)
                 {
-                    string cid = res[i]["id"];
-                    SqlResault appartments = Utility.database.Query("select * from Appartments where client_id = " + cid + ";");
-                    for (int j = 0; j < appartments.Count; j++)
+                    Utility.database.OpenConnection();
+
+                    SqlResault res = Utility.database.Query("select id from Clients");
+
+                    for (int i = 0; i < res.Count; i++)
                     {
-                        Utility.database.Query(@"insert into Owes (client_id, appartment_id, aYear,mvalue,notes)
-                                             values (" + cid + ", '" + appartments[j]["id"] + "' , '" + iformres[0] + "', "+ iformres[1] + ", '');");
+                        string cid = res[i]["id"];
+                        SqlResault appartments = Utility.database.Query("select * from Appartments where client_id = " + cid + ";");
+                        for (int j = 0; j < appartments.Count; j++)
+                        {
+                            Utility.database.Query(@"insert into Owes (client_id, appartment_id, aYear,mvalue,notes)
+                                             values (" + cid + ", '" + appartments[j]["id"] + "' , '" + iformres[0] + "', " + iformres[1] + ", '');");
+                        }
                     }
+                    Utility.database.CloseConnection();
+                    MessageBox.Show("All clients were charged for their appartments for the year " + iformres[0] + ".");
                 }
-                Utility.database.CloseConnection();
-                MessageBox.Show("All clients were charged for their appartments for the year "+iformres[0]+".");
-            }
         }
 
         private void helpMenu_Click(object sender, EventArgs e)
         {
 
         }
- 
+
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
             if (keyData == (Keys.Control | Keys.Q))
-            {    ShowRunQuery();
-           
+            {
+                ShowRunQuery();
+
                 return true;
             }
             return base.ProcessCmdKey(ref msg, keyData);
@@ -409,11 +431,12 @@ namespace TImeShareApp
 
         private void allcardsToolStripMenuItem_Click(object sender, EventArgs e)
         {
-     
+
         }
 
         private void findToolStripMenuItem1_Click(object sender, EventArgs e)
-        {       ShowSearchCard();
+        {
+            ShowSearchCard();
 
         }
 

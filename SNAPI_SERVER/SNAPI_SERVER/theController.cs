@@ -61,7 +61,9 @@ public class theController
     public string lout(SN.RequestInfo request)
     {
         if (SN.Sessions.Current[request.sid].ContainsKey("user"))
-            SN.Sessions.Current[request.sid]["user"] = null;
+        {
+            SN.Sessions.Current[request.sid]["user"] = null; 
+        }
         return "ok";
     }
 

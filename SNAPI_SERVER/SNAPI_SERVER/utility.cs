@@ -11,6 +11,7 @@ using System.Text.RegularExpressions;
         public static Dictionary<string, Dictionary<string, string>> locale;
         public static bool RegularMatch(string pattern, string input) { return new Regex(pattern).Match(input).Success; }
     public static Database database;
+public static    System.Text.IniParser ini;
         public static string GetLocalIPAddress()
         {
             var host = Dns.GetHostEntry(Dns.GetHostName());

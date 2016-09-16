@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+﻿ 
 using System;
 using System.Drawing;
 using System.IO;
@@ -15,11 +15,7 @@ namespace FileSyncServer
         private static NotifyIcon TrayIcon;
         private ContextMenuStrip TrayIconContextMenu;
         private ToolStripMenuItem CloseMenuItem;
-        private   void SaveSettings(settings setts)
-        {
-            string sz = JsonConvert.SerializeObject(setts, Formatting.Indented);
-            File.WriteAllText("settings.json", sz);
-        }
+  
     
         public MyApplicationContext()
         {
@@ -33,8 +29,12 @@ namespace FileSyncServer
         {
 
             SN.Controllers.Current.Add(new theController()); 
-            new Thread(() => {new SN.Listener(utility.GetLocalIPAddress(), 581).Start(); }).Start();
-
+            new Thread(() => {
+                SN.Listener ls = new SN.Listener(utility.GetLocalIPAddress(), 581);
+                ls.RsaLength = int.Parse(utility.ini.Read("basic", "rsa_key_length")); 
+                ls.Start();
+            }).Start();
+           // MessageBox.Show(utility.GetLocalIPAddress());
 
             TrayIcon = new NotifyIcon();
 

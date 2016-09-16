@@ -70,16 +70,11 @@ class Database
                 }
 
             }
-
-
-
-
-
+            
             return res;
         }
         else
         {
-            System.Diagnostics.Debug.WriteLine("onq");
           return  Utility.Connection.Send<SqlResault>("query", qr); 
         }
     }
