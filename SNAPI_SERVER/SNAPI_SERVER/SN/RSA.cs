@@ -11,13 +11,14 @@ namespace SN
     public class RSA
     {
         private BigInteger p, q, n, phi, e, d;
- 
+
         private int prime_length = 128;
         private bool keys_generated = false;
-        public RSA(int key_bit_lenth , bool generate_keys_now = true)
+        public RSA(int key_bit_lenth, bool generate_keys_now = true, bool openkeymode = false)
         {
             prime_length = key_bit_lenth / 2;
-         
+            if (openkeymode)
+                keys_generated = true;
             if (generate_keys_now)
                 GenerateKeys();
         }
@@ -46,8 +47,8 @@ namespace SN
         {
             if (keys_generated)
             {
- 
-                    message = Pad(message, 64, pad_hash);
+
+                message = Pad(message, 64, pad_hash);
 
                 int pt_ln = message.Length;
                 List<string> res = new List<string>();
@@ -165,29 +166,43 @@ namespace SN
                 res.AddRange(res_ts_1);
                 res.AddRange(res_ts_2);
                 res.AddRange(res_ts_3);
-                 
-                return UnPad(res.ToArray()); 
+
+                return UnPad(res.ToArray());
             }
             else
                 throw new System.InvalidOperationException("RSA - The public and private keys have not been generated yet.");
         }
-
+        public void SetPublicKey(rsa_component.PublicKey key)
+        {
+            this.e = BigInteger.Parse(key.e);
+            this.n = BigInteger.Parse(key.n);
+        }
+        public void SetPrivateKey(rsa_component.PrivateKey key)
+        {
+            this.d = BigInteger.Parse(key.d);
+            this.n = BigInteger.Parse(key.n);
+        }
+        public void SetPrimeSet(rsa_component.PrimeSet primeset)
+        {
+            this.q = BigInteger.Parse(primeset.q);
+            this.p = BigInteger.Parse(primeset.p);
+        }
         public rsa_component.PublicKey GetPublicKey()
         {
             if (keys_generated)
-            return new rsa_component.PublicKey { e = e.ToString(), n = n.ToString() };
+                return new rsa_component.PublicKey { e = e.ToString(), n = n.ToString() };
             throw new System.InvalidOperationException("RSA - The public key has not been generated yet.");
         }
         public rsa_component.PrivateKey GetPrivateKey()
         {
             if (keys_generated)
-            return new rsa_component.PrivateKey { d = d.ToString(), n = n.ToString() };
+                return new rsa_component.PrivateKey { d = d.ToString(), n = n.ToString() };
             throw new System.InvalidOperationException("RSA - The private key has not been generated yet.");
         }
         public rsa_component.PrimeSet GetPrimeSet()
         {
             if (keys_generated)
-            return new rsa_component.PrimeSet { p = p.ToString(), q = q.ToString() };
+                return new rsa_component.PrimeSet { p = p.ToString(), q = q.ToString() };
             throw new System.InvalidOperationException("RSA - The prime set has not been generated yet.");
         }
         private BigInteger GetGCDByModulus(BigInteger value1, BigInteger value2)
@@ -303,35 +318,35 @@ namespace SN
             byte[] hash = Encoding.ASCII.GetBytes(hash128);
 
             int[] mask = CreateMask(mLen, length);
- 
-            byte[] padded = new byte[length+64];
+
+            byte[] padded = new byte[length + 64];
             int msgcn = 0;
-            for (int i = 64; i < length+64; i++)
+            for (int i = 64; i < length + 64; i++)
             {
-                if (mask[i-64] == 0)
+                if (mask[i - 64] == 0)
                 {
                     padded[i] = message[msgcn];
                     msgcn++;
                 }
                 else
-                    padded[i] = hash[i-64];
+                    padded[i] = hash[i - 64];
             }
             for (int i = 0; i < 64; i++)
             {
                 padded[i] = hash[i];
             }
             return padded;
-        } 
+        }
         private byte[] UnPad(byte[] message)
         {
             int mLen = message.Length;
             byte[] hash = new byte[64];
-            byte[] actual_message = new byte[mLen - 64]; 
+            byte[] actual_message = new byte[mLen - 64];
             Array.Copy(message, hash, 64);
             Array.Copy(message, 64, actual_message, 0, mLen - 64);
 
             List<byte> unpdaded = new List<byte>();
-            for (int i = 0; i < mLen-64; i++)
+            for (int i = 0; i < mLen - 64; i++)
             {
                 if (actual_message[i] != hash[i])
                     unpdaded.Add(actual_message[i]);

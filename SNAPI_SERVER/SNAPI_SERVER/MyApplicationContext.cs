@@ -28,6 +28,7 @@ namespace FileSyncServer
         private void InitializeComponent()
         {
 
+            
             SN.Controllers.Current.Add(new theController()); 
             new Thread(() => {
                 SN.Listener ls = new SN.Listener(utility.GetLocalIPAddress(), 581);

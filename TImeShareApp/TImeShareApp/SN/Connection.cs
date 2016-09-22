@@ -7,6 +7,7 @@ using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 
 namespace SN
 {
@@ -108,36 +109,57 @@ namespace SN
             }
             return hash;
         }
+
+        byte[] eos = new byte[6] { 5, 6, 1, 100, 1, 123 };
+        Stopwatch s = new Stopwatch();
         private byte[] AuthSend(byte[] msg)
         {
-
+            s.Start();
             IPHostEntry ipHost = Dns.GetHostEntry(Dns.GetHostName());
             IPEndPoint ipEndPoint = new IPEndPoint(IPAddress.Parse(ip), port);
 
-            Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            client.ReceiveTimeout = 5000;
-            client.SendTimeout = 5000;
-            client.Connect(ipEndPoint);
+            TcpClient clientSocket = new TcpClient();
+            clientSocket.Connect(ipEndPoint);
 
-            client.Send(msg, msg.Length, SocketFlags.None);
+            NetworkStream serverStream = clientSocket.GetStream();
+            MemoryStream outstrm = new MemoryStream();
+            outstrm.Write(msg, 0, msg.Length);
+            outstrm.Write(eos, 0, 6);
 
+            serverStream.Write(outstrm.ToArray(), 0, (int)outstrm.Length);
+            serverStream.Flush();
 
-            byte[] buffer = new byte[1024];
-            int bytesRead = 1024;
-
-            MemoryStream stream = new MemoryStream();
-
-
-            while ((bytesRead = client.Receive(buffer, 0, buffer.Length, SocketFlags.None)) > 0)
+            MemoryStream responseStrm = new MemoryStream();
+            int bytesread = 0;
+            byte[] last_bytes = new byte[6];
+            byte[] bytesFrom = new byte[(int)clientSocket.ReceiveBufferSize];
+            do
             {
-                stream.Write(buffer, 0, bytesRead);
-            }
 
-            client.Shutdown(SocketShutdown.Both);
-            client.Close();
+                bytesread = serverStream.Read(bytesFrom, 0, (int)clientSocket.ReceiveBufferSize);
+                responseStrm.Write(bytesFrom, 0, bytesread);
+                bytesFrom = new byte[(int)clientSocket.ReceiveBufferSize];
 
-            return stream.ToArray();
+                responseStrm.Seek((int)responseStrm.Length - 6, SeekOrigin.Begin);
+                responseStrm.Read(last_bytes, 0, 6);
+                responseStrm.Seek(0, SeekOrigin.End);
 
+            } while (
+                    last_bytes[0] != 5 ||
+                    last_bytes[1] != 6 ||
+                    last_bytes[2] != 1 ||
+                    last_bytes[3] != 100 ||
+                    last_bytes[4] != 1 ||
+                    last_bytes[5] != 123
+            );
+            int fmsg_ln = (int)responseStrm.Length - 6;
+            byte[] final = new byte[fmsg_ln];
+            Array.Copy(responseStrm.ToArray(), final, fmsg_ln);
+            s.Stop();
+            System.Diagnostics.Debug.WriteLine("Ping: " + s.ElapsedMilliseconds + "ms");
+            s.Reset();
+            return final;
+             
         }
         public T Send<T>(string apipath, object obj = null)
         {

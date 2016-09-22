@@ -1,10 +1,16 @@
-﻿using System.Windows.Forms;
+﻿using System.Runtime.InteropServices;
+using System.Windows.Forms;
 namespace FileSyncServer
 {
     class Program
     {
+        [DllImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        static extern bool AllocConsole();
+
         static void Main(string[] args)
         {
+            AllocConsole();
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
          utility.ini = new System.Text.IniParser("snsets.ini");

@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>SNAPI_SERVER</RootNamespace>
     <AssemblyName>SNAPI_SERVER</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <TargetFrameworkProfile />
@@ -97,6 +97,7 @@
     <Compile Include="SN\RequestInfo.cs" />
     <Compile Include="SN\ResponseInfo.cs" />
     <Compile Include="SN\RSA.cs" />
+    <Compile Include="SN\RSAKeyloader.cs" />
     <Compile Include="SN\Sessions.cs" />
     <Compile Include="theController.cs" />
     <Compile Include="utility.cs" />
